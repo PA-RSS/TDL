@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "TDL — Digital Notepad",
   "main": "main.js",
+  "author": "TDL",
   "scripts": {
     "start": "electron .",
     "build:win": "electron-builder --win",
@@ -19,17 +20,17 @@
       "main.js"
     ],
     "win": {
-      "target": "nsis",
+      "target": "nsis"
     },
     "mac": {
-      "target": "dmg",
+      "target": "dmg"
     },
     "linux": {
-      "target": "AppImage",
+      "target": "AppImage"
     },
     "nsis": {
-      "installerIcon": "assets/icon.ico",
-      "uninstallerIcon": "assets/icon.ico",
+      "oneClick": true,
+      "shortcutName": "TDL"
     }
   },
   "devDependencies": {
