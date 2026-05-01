@@ -81,8 +81,7 @@ body { font-family: sans-serif; background: #fdf9c4; position: relative; }
 .archive-item { height: 32px; display: flex; align-items: center; border-bottom: 1px solid #b8c870; font-size: 14px; color: #a09050; text-decoration: line-through; gap: 8px; }
 .restore-btn { font-size: 11px; color: #c8903a; background: none; border: none; cursor: pointer; flex-shrink: 0; }
 .archive-empty { height: 32px; display: flex; align-items: center; font-size: 13px; color: #b8a050; }
-.settings-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; align-items: flex-start; justify-content: center; padding-top: 60px; }
-.settings-overlay.open { display: flex; }
+.settings-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.55); z-index: 100; align-items: flex-start; justify-content: center; padding-top: 60px; overflow-y: auto; }.settings-overlay.open { display: flex; }
 .settings-panel { background: #fff; border-radius: 8px; width: 340px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
 .settings-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; border-bottom: 1px solid #eee; }
 .settings-title { font-size: 15px; font-weight: 600; color: #333; }
