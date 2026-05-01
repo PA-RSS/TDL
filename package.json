@@ -15,8 +15,6 @@
     "productName": "TDL",
     "files": [
       "index.html",
-      "styles.css",
-      "app.js",
       "main.js"
     ],
     "win": {
