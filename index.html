@@ -1,1 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TDL</title>
+  <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: sans-serif; background: #fff; }
+.pad-outer { display: flex; justify-content: center; padding: 1.5rem 0 2rem; }
+.pad { width: 420px; border-radius: 4px; border: 1px solid #c8b84a; overflow: visible; font-family: inherit; position: relative; }
+.pad-binding { height: 22px; background: #7a4b2a; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-radius: 4px 4px 0 0; }
+.binding-dot { width: 10px; height: 10px; border-radius: 50%; background: #c8903a; flex-shrink: 0; }
+.cog-btn { width: 14px; height: 14px; background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0.85; transition: opacity 0.15s, transform 0.3s; }
+.cog-btn:hover { opacity: 1; transform: rotate(30deg); }
+.cog-btn svg { width: 14px; height: 14px; }
+.pad-header { border-bottom: 2px solid #c8b84a; padding: 0 16px 0 56px; height: 32px; display: flex; align-items: center; justify-content: flex-end; }
+.pad-title { font-size: 11px; color: #8a7a30; cursor: pointer; border: none; background: transparent; font-family: inherit; outline: none; text-align: right; min-width: 30px; max-width: 120px; }
+.pad-title:focus { border-bottom: 1px solid #c8903a; }
+.pad-body { position: relative; overflow: hidden; border-radius: 0 0 4px 4px; }
+.red-margin { position: absolute; left: 46px; top: 0; bottom: 0; width: 1.5px; background: #e87070; z-index: 2; pointer-events: none; }
+.pad-content { position: relative; z-index: 3; padding: 0 16px 0 56px; }
+.input-line { height: 32px; display: flex; align-items: center; border-bottom: 1px solid #b8c870; }
+.task-input { width: 100%; background: transparent; border: none; outline: none; font-size: 15px; color: #3a3010; font-family: inherit; padding: 0; line-height: 32px; }
+.task-input::placeholder { color: #a09050; }
+.task-row { display: flex; align-items: flex-start; gap: 6px; position: relative; border-bottom: 1px solid #b8c870; }
+.task-row.done .task-label { text-decoration: line-through; color: #a09050; }
+.task-row.dragging { opacity: 0.4; }
+.task-row.drag-over { background: rgba(200,144,58,0.08); }
+.add-sub-btn { position: absolute; left: -52px; top: 7px; width: 16px; height: 18px; display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; opacity: 0; padding: 0; }
+.task-row:hover .add-sub-btn { opacity: 1; }
+.add-sub-btn svg { stroke: #a09050; transition: stroke 0.15s; }
+.add-sub-btn:hover svg { stroke: #7a4b2a; }
+.drag-handle { position: absolute; left: -36px; top: 8px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; cursor: grab; opacity: 0; }
+.task-row:hover .drag-handle { opacity: 1; }
+.cb { width: 16px; height: 16px; border-radius: 3px; border: 1.5px solid #8a7a30; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 8px; }
+.cb.checked { background: #c8903a; border-color: #c8903a; }
+.task-main { flex: 1; min-width: 0; }
+.task-top { display: flex; align-items: flex-start; gap: 4px; }
+.task-label { flex: 1; min-width: 0; font-size: 15px; color: #3a3010; line-height: 32px; word-break: break-word; white-space: normal; }
+.task-meta { display: flex; align-items: center; gap: 6px; padding-bottom: 2px; }
+.step-count { font-size: 11px; color: #8a7a30; }
+.step-count.all-done { color: #c8903a; }
+.due-badge { font-size: 11px; }
+.due-badge.overdue { color: #c04040; font-weight: 500; }
+.due-badge.due-soon { color: #c87030; }
+.task-actions { display: flex; align-items: center; gap: 2px; opacity: 0; flex-shrink: 0; padding-top: 6px; }
+.task-row:hover .task-actions { opacity: 1; }
+.action-btn { background: none; border: none; cursor: pointer; padding: 2px; display: flex; align-items: center; justify-content: center; border-radius: 3px; }
+.action-btn:hover { background: rgba(0,0,0,0.06); }
+.pencil-svg { stroke: #a09050; transition: stroke 0.15s; }
+.action-btn:hover .pencil-svg { stroke: #7a4b2a; }
+.collapse-btn { color: #a09050; transition: transform 0.15s; }
+.collapse-btn.collapsed { transform: rotate(-90deg); }
+.edit-input { flex: 1; min-width: 0; background: transparent; border: none; border-bottom: 1px solid #c8903a; outline: none; font-size: 15px; color: #3a3010; font-family: inherit; padding: 0; line-height: 32px; height: 32px; }
+.date-input { font-size: 11px; background: transparent; border: 1px solid #c8b84a; border-radius: 3px; padding: 1px 4px; font-family: inherit; outline: none; margin-bottom: 3px; color: #3a3010; }
+.priority-dot { width: 7px; height: 7px; border-radius: 50%; background: #c8903a; flex-shrink: 0; margin-top: 13px; }
+.sub-row { display: flex; align-items: flex-start; gap: 6px; position: relative; border-bottom: 1px solid #b8c870; padding-left: 16px; }
+.sub-row.done .sub-label { text-decoration: line-through; color: #a09050; }
+.sub-cb { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid #8a7a30; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 10px; }
+.sub-cb.checked { background: #c8903a; border-color: #c8903a; }
+.sub-label { flex: 1; min-width: 0; font-size: 14px; color: #5a4a10; line-height: 32px; word-break: break-word; }
+.sub-pencil-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; width: 16px; height: 32px; opacity: 0; flex-shrink: 0; }
+.sub-row:hover .sub-pencil-btn { opacity: 1; }
+.sub-pencil-btn:hover .pencil-svg { stroke: #7a4b2a; }
+.sub-edit-input { flex: 1; min-width: 0; background: transparent; border: none; border-bottom: 1px solid #c8903a; outline: none; font-size: 14px; color: #3a3010; font-family: inherit; padding: 0; line-height: 32px; height: 32px; }
+.sub-add-row { display: flex; align-items: center; border-bottom: 1px solid #b8c870; padding-left: 16px; gap: 6px; }
+.sub-add-input { flex: 1; background: transparent; border: none; outline: none; font-size: 14px; color: #3a3010; font-family: inherit; padding: 0; line-height: 32px; height: 32px; }
+.sub-add-input::placeholder { color: #b8a050; }
+.empty-row { height: 32px; display: flex; align-items: center; border-bottom: 1px solid #b8c870; }
+.empty-txt { font-size: 14px; color: #a09050; }
+.footer-row { height: 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #b8c870; }
+.counts-txt { font-size: 12px; color: #8a7a30; }
+.footer-actions { display: flex; gap: 8px; align-items: center; }
+.clear-btn { font-size: 12px; color: #c04040; background: none; border: none; cursor: pointer; }
+.archive-btn-sm { font-size: 12px; color: #8a7a30; background: none; border: none; cursor: pointer; }
+.blank-row { height: 32px; border-bottom: 1px solid #b8c870; }
+.archive-panel { border-top: 2px solid #c8b84a; padding: 0 16px 0 56px; background: #fdf9c4; }
+.archive-header { height: 32px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #8a7a30; border-bottom: 1px solid #b8c870; }
+.archive-close { background: none; border: none; cursor: pointer; color: #a09050; font-size: 16px; }
+.archive-item { height: 32px; display: flex; align-items: center; border-bottom: 1px solid #b8c870; font-size: 14px; color: #a09050; text-decoration: line-through; gap: 8px; }
+.restore-btn { font-size: 11px; color: #c8903a; background: none; border: none; cursor: pointer; flex-shrink: 0; }
+.archive-empty { height: 32px; display: flex; align-items: center; font-size: 13px; color: #b8a050; }
+.settings-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; align-items: flex-start; justify-content: center; padding-top: 60px; }
+.settings-overlay.open { display: flex; }
+.settings-panel { background: #fff; border-radius: 8px; width: 340px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+.settings-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; border-bottom: 1px solid #eee; }
+.settings-title { font-size: 15px; font-weight: 600; color: #333; }
+.settings-close { background: none; border: none; cursor: pointer; font-size: 20px; color: #999; line-height: 1; }
+.settings-section { padding: 12px 16px 4px; }
+.settings-section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: #999; text-transform: uppercase; margin-bottom: 8px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f5f5f5; gap: 8px; }
+.settings-label { font-size: 13px; color: #444; }
+.settings-sub { font-size: 11px; color: #999; }
+.toggle { width: 36px; height: 20px; border-radius: 10px; background: #ddd; border: none; cursor: pointer; position: relative; flex-shrink: 0; transition: background 0.2s; }
+.toggle.on { background: #c8903a; }
+.toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle.on::after { left: 18px; }
+.color-swatches { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: border-color 0.15s; }
+.swatch.active { border-color: #333; }
+.settings-select { font-size: 13px; border: 1px solid #ddd; border-radius: 4px; padding: 3px 6px; background: #fff; color: #444; outline: none; }
+.settings-btn { font-size: 13px; padding: 5px 12px; border-radius: 4px; border: 1px solid #ddd; background: #f8f8f8; color: #444; cursor: pointer; }
+.settings-btn:hover { background: #eee; }
+.settings-btn.danger { border-color: #f5c0c0; background: #fff5f5; color: #c04040; }
+.settings-btn.primary { border-color: #c8903a; background: #c8903a; color: #fff; }
+.settings-btn.primary:hover { background: #a87030; }
+.import-textarea { width: 100%; font-size: 12px; font-family: inherit; border: 1px solid #ddd; border-radius: 4px; padding: 6px; resize: vertical; outline: none; min-height: 60px; color: #444; margin-top: 4px; }
+.share-url { width: 100%; font-size: 11px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; padding: 5px 7px; background: #f8f8f8; color: #555; margin-top: 6px; word-break: break-all; }
+.font-size-btns { display: flex; gap: 4px; }
+.fs-btn { width: 28px; height: 24px; border: 1px solid #ddd; border-radius: 4px; background: #f8f8f8; cursor: pointer; font-size: 12px; color: #555; }
+.fs-btn.active { border-color: #c8903a; background: #fdf3e0; color: #c8903a; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #5a4a10; color: #fdf9c4; font-size: 13px; padding: 6px 16px; border-radius: 20px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 999; white-space: nowrap; }
+.toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-panel">
+    <div class="settings-header">
+      <span class="settings-title">⚙️ Settings</span>
+      <button class="settings-close" id="settings-close-btn">×</button>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Appearance</div>
+      <div class="settings-row"><span class="settings-label">Background color</span></div>
+      <div class="color-swatches" id="bg-swatches"></div>
+      <div class="settings-row" style="margin-top:10px;"><span class="settings-label">Text color</span></div>
+      <div class="color-swatches" id="text-swatches"></div>
+      <div class="settings-row" style="margin-top:10px;">
+        <span class="settings-label">Font size</span>
+        <div class="font-size-btns">
+          <button class="fs-btn" id="fs-small" onclick="setFontSize('small')">S</button>
+          <button class="fs-btn" id="fs-medium" onclick="setFontSize('medium')">M</button>
+          <button class="fs-btn" id="fs-large" onclick="setFontSize('large')">L</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Compact mode</div><div class="settings-sub">Tighter row height</div></div>
+        <button class="toggle" id="toggle-compact" onclick="toggleSetting('compact')"></button>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Show ruled lines</span>
+        <button class="toggle" id="toggle-lines" onclick="toggleSetting('lines')"></button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Productivity</div>
+      <div class="settings-row">
+        <span class="settings-label">Default sort order</span>
+        <select class="settings-select" id="sort-select" onchange="setSortOrder(this.value)">
+          <option value="manual">Manual</option>
+          <option value="priority">Priority first</option>
+          <option value="due">Due date</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Auto-archive completed</div><div class="settings-sub">After marking done</div></div>
+        <button class="toggle" id="toggle-autoArchive" onclick="toggleSetting('autoArchive')"></button>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Show step counter badges</span>
+        <button class="toggle" id="toggle-badges" onclick="toggleSetting('badges')"></button>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Auto-complete parent task</div><div class="settings-sub">When all steps are done</div></div>
+        <button class="toggle" id="toggle-autoParent" onclick="toggleSetting('autoParent')"></button>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Confirm before clearing</span>
+        <button class="toggle" id="toggle-confirmClear" onclick="toggleSetting('confirmClear')"></button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Data</div>
+      <div class="settings-row">
+        <span class="settings-label">Export</span>
+        <div style="display:flex;gap:6px;">
+          <button class="settings-btn" onclick="exportText()">Text</button>
+          <button class="settings-btn" onclick="exportJSON()">JSON</button>
+        </div>
+      </div>
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <span class="settings-label">Import tasks (one per line)</span>
+        <textarea class="import-textarea" id="import-text" placeholder="Task one&#10;Task two&#10;Task three"></textarea>
+        <button class="settings-btn primary" onclick="importTasks()" style="margin-top:2px;">Import</button>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Reset pad</span>
+        <button class="settings-btn danger" onclick="resetPad()">Clear all</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Share</div>
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+        <span class="settings-label">Generate a shareable link</span>
+        <span class="settings-sub">Anyone with the link can view your list</span>
+        <button class="settings-btn primary" onclick="generateShareLink()">Generate link</button>
+        <div id="share-url-box" style="display:none;width:100%;">
+          <div class="share-url" id="share-url"></div>
+          <button class="settings-btn" style="margin-top:6px;" onclick="copyShareLink()">Copy link</button>
+        </div>
+      </div>
+    </div>
+    <div style="height:12px;"></div>
+  </div>
+</div>
+
+<div class="pad-outer">
+  <div class="pad" id="the-pad">
+    <div class="pad-binding">
+      <div class="binding-dot"></div>
+      <div class="binding-dot"></div>
+      <div class="binding-dot"></div>
+      <div class="binding-dot"></div>
+      <button class="cog-btn" id="cog-btn" title="Settings">
+        <svg viewBox="0 0 20 20" fill="#e8c878" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-1.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M8.257 2.176a2 2 0 0 1 3.486 0l.44.763a.5.5 0 0 0 .59.225l.836-.277a2 2 0 0 1 2.467 2.467l-.277.836a.5.5 0 0 0 .225.59l.763.44a2 2 0 0 1 0 3.486l-.763.44a.5.5 0 0 0-.225.59l.277.836a2 2 0 0 1-2.467 2.467l-.836-.277a.5.5 0 0 0-.59.225l-.44.763a2 2 0 0 1-3.486 0l-.44-.763a.5.5 0 0 0-.59-.225l-.836.277a2 2 0 0 1-2.467-2.467l.277-.836a.5.5 0 0 0-.225-.59l-.763-.44a2 2 0 0 1 0-3.486l.763-.44a.5.5 0 0 0 .225-.59l-.277-.836a2 2 0 0 1 2.467-2.467l.836.277a.5.5 0 0 0 .59-.225l.44-.763z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="pad-header" id="pad-header" style="background:#fdf9c4;">
+      <input class="pad-title" id="pad-title" value="TDL" maxlength="20" title="Click to rename" />
+    </div>
+    <div class="pad-body" id="pad-body" style="background:#fdf9c4;">
+      <div class="red-margin" id="red-margin"></div>
+      <div class="pad-content" id="pad-content">
+        <div class="input-line">
+          <input class="task-input" id="new-task" type="text" placeholder="Add a new item..." maxlength="500" />
+        </div>
+        <div id="task-list"></div>
+        <div class="footer-row">
+          <span class="counts-txt" id="counts"></span>
+          <div class="footer-actions">
+            <button class="archive-btn-sm" id="archive-toggle-btn" onclick="toggleArchive()" style="display:none">Archive</button>
+            <button class="clear-btn" id="clear-btn" onclick="clearDone()" style="display:none">Clear completed</button>
+          </div>
+        </div>
+        <div class="blank-row"></div>
+        <div class="blank-row"></div>
+        <div class="blank-row"></div>
+      </div>
+    </div>
+    <div class="archive-panel" id="archive-panel" style="display:none;">
+      <div class="archive-header"><span>Archive</span><button class="archive-close" onclick="toggleArchive()">×</button></div>
+      <div id="archive-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let tasks = [], archive = [];
+let editingId = null, editingSubId = null, addingSubFor = null;
+let subCommitting = false, showArchive = false, dragSrcId = null;
+let history = [], toastTimer = null;
+const MAX_HISTORY = 50;
+const defaultSettings = { bgColor: '#fdf9c4', textColor: '#3a3010', fontSize: 'medium', compact: false, lines: true, sortOrder: 'manual', autoArchive: false, badges: true, autoParent: true, confirmClear: false };
+let settings = { ...defaultSettings };
+const bgColors = ['#fdf9c4', '#ffffff', '#e8f4e8', '#e8eef8', '#f8e8f8', '#fde8d8', '#2d2d2d'];
+const textColors = ['#3a3010', '#000000', '#1a3a1a', '#1a1a3a', '#3a1a3a', '#5a2000', '#f0f0f0'];
+
+document.getElementById('cog-btn').addEventListener('click', openSettings);
+document.getElementById('settings-close-btn').addEventListener('click', closeSettings);
+document.getElementById('settings-overlay').addEventListener('click', function (e) { if (e.target === this) closeSettings(); });
+document.getElementById('new-task').addEventListener('keydown', function (e) { if (e.key === 'Enter') addTask(); });
+document.getElementById('pad-title').addEventListener('change', persist);
+
+function load() {
+  try {
+    const r = localStorage.getItem('__tdl_v2_tasks'); if (r) tasks = JSON.parse(r);
+    const a = localStorage.getItem('__tdl_v2_archive'); if (a) archive = JSON.parse(a);
+    const t = localStorage.getItem('__tdl_v2_title'); if (t) document.getElementById('pad-title').value = t;
+    const s = localStorage.getItem('__tdl_v2_settings'); if (s) settings = { ...defaultSettings, ...JSON.parse(s) };
+  } catch (e) {}
+}
+function persist() {
+  try {
+    localStorage.setItem('__tdl_v2_tasks', JSON.stringify(tasks));
+    localStorage.setItem('__tdl_v2_archive', JSON.stringify(archive));
+    localStorage.setItem('__tdl_v2_title', document.getElementById('pad-title').value);
+    localStorage.setItem('__tdl_v2_settings', JSON.stringify(settings));
+  } catch (e) {}
+}
+function snapshot() { history.push(JSON.stringify({ tasks, archive })); if (history.length > MAX_HISTORY) history.shift(); }
+function save() { persist(); applySettings(); render(); }
+function undo() {
+  if (!history.length) return;
+  editingId = null; editingSubId = null; addingSubFor = null;
+  const s = JSON.parse(history.pop()); tasks = s.tasks; archive = s.archive;
+  save(); showToast('Undone');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+function openSettings() { updateSettingsUI(); document.getElementById('settings-overlay').classList.add('open'); }
+function closeSettings() { document.getElementById('settings-overlay').classList.remove('open'); }
+function updateSettingsUI() {
+  document.getElementById('bg-swatches').innerHTML = bgColors.map(c => `<div class="swatch ${settings.bgColor === c ? 'active' : ''}" style="background:${c};border-color:${settings.bgColor === c ? '#333' : 'transparent'}" onclick="setBgColor('${c}')"></div>`).join('');
+  document.getElementById('text-swatches').innerHTML = textColors.map(c => `<div class="swatch ${settings.textColor === c ? 'active' : ''}" style="background:${c};border-color:${settings.textColor === c ? '#555' : 'transparent'}" onclick="setTextColor('${c}')"></div>`).join('');
+  ['small', 'medium', 'large'].forEach(s => document.getElementById('fs-' + s).classList.toggle('active', settings.fontSize === s));
+  ['compact', 'lines', 'autoArchive', 'badges', 'autoParent', 'confirmClear'].forEach(k => {
+    const el = document.getElementById('toggle-' + k); if (el) el.classList.toggle('on', !!settings[k]);
+  });
+  document.getElementById('sort-select').value = settings.sortOrder;
+  document.getElementById('share-url-box').style.display = 'none';
+}
+function setBgColor(c) { settings.bgColor = c; persist(); applySettings(); updateSettingsUI(); }
+function setTextColor(c) { settings.textColor = c; persist(); applySettings(); updateSettingsUI(); }
+function setFontSize(s) { settings.fontSize = s; persist(); applySettings(); updateSettingsUI(); }
+function setSortOrder(v) { settings.sortOrder = v; persist(); render(); }
+function toggleSetting(k) { settings[k] = !settings[k]; persist(); applySettings(); updateSettingsUI(); render(); }
+function applySettings() {
+  const bg = settings.bgColor;
+  document.getElementById('the-pad').style.background = bg;
+  document.getElementById('pad-header').style.background = bg;
+  document.getElementById('pad-body').style.background = bg;
+  document.getElementById('archive-panel').style.background = bg;
+  document.getElementById('pad-content').style.color = settings.textColor;
+  document.getElementById('pad-title').style.color = settings.textColor === '#f0f0f0' ? '#ccc' : '#8a7a30';
+  const fs = settings.fontSize === 'small' ? '13px' : settings.fontSize === 'large' ? '17px' : '15px';
+  document.getElementById('pad-content').style.fontSize = fs;
+  const rowH = settings.compact ? '24px' : '32px';
+  document.querySelectorAll('.task-row,.sub-row,.input-line,.footer-row,.blank-row,.empty-row,.archive-item,.sub-add-row').forEach(el => { el.style.minHeight = rowH; });
+  document.querySelectorAll('.task-label,.sub-label,.task-input,.edit-input,.sub-edit-input').forEach(el => { el.style.lineHeight = rowH; });
+  document.querySelectorAll('.cb').forEach(el => { el.style.marginTop = settings.compact ? '4px' : '8px'; });
+  const lc = settings.lines ? '#b8c870' : 'transparent';
+  document.querySelectorAll('.task-row,.sub-row,.input-line,.footer-row,.blank-row,.empty-row,.archive-item,.sub-add-row').forEach(el => { el.style.borderBottom = `1px solid ${lc}`; });
+  document.getElementById('red-margin').style.display = settings.lines ? 'block' : 'none';
+}
+function exportText() {
+  const title = document.getElementById('pad-title').value;
+  let out = title + '\n' + '='.repeat(title.length) + '\n\n';
+  tasks.forEach(t => { out += (t.done ? '[x] ' : '[ ] ') + t.text + (t.dueDate ? ' (due: ' + t.dueDate + ')' : '') + '\n'; t.subs.forEach(s => { out += '    ' + (s.done ? '[x] ' : '[ ] ') + s.text + '\n'; }); });
+  const blob = new Blob([out], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (title || 'TDL') + '.txt'; a.click(); showToast('Exported as text');
+}
+function exportJSON() {
+  const title = document.getElementById('pad-title').value;
+  const data = { title, tasks, archive, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (title || 'TDL') + '.json'; a.click(); showToast('Exported as JSON');
+}
+function importTasks() {
+  const raw = document.getElementById('import-text').value.trim(); if (!raw) return;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean); snapshot();
+  lines.forEach(l => { tasks.push({ id: Date.now() + Math.random(), text: l, done: false, flagged: false, dueDate: null, collapsed: false, subs: [] }); });
+  document.getElementById('import-text').value = ''; save(); showToast('Imported ' + lines.length + ' task' + (lines.length > 1 ? 's' : ''));
+}
+function resetPad() { if (!confirm('Clear all tasks and archive?')) return; tasks = []; archive = []; save(); showToast('Pad cleared'); }
+function generateShareLink() {
+  const title = document.getElementById('pad-title').value;
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify({ title, tasks }))));
+  const url = location.href.split('?')[0] + '?tdl=' + encoded;
+  document.getElementById('share-url').textContent = url;
+  document.getElementById('share-url-box').style.display = 'block';
+}
+function copyShareLink() {
+  const url = document.getElementById('share-url').textContent;
+  navigator.clipboard.writeText(url).then(() => showToast('Link copied!')).catch(() => prompt('Copy this link:', url));
+}
+function loadFromShareLink() {
+  try {
+    const enc = new URLSearchParams(location.search).get('tdl'); if (!enc) return;
+    const d = JSON.parse(decodeURIComponent(escape(atob(enc)))); if (d.tasks) tasks = d.tasks; if (d.title) document.getElementById('pad-title').value = d.title; showToast('Shared list loaded!');
+  } catch (e) {}
+}
+function toggleArchive() { showArchive = !showArchive; render(); }
+function restoreFromArchive(id) {
+  snapshot(); const idx = archive.findIndex(t => t.id === id); if (idx === -1) return;
+  tasks.unshift({ ...archive[idx], done: false }); archive.splice(idx, 1); save();
+}
+function addTask() {
+  const inp = document.getElementById('new-task'); const txt = inp.value.trim(); if (!txt) return;
+  snapshot(); tasks.unshift({ id: Date.now(), text: txt, done: false, flagged: false, dueDate: null, collapsed: false, subs: [] }); inp.value = ''; save();
+}
+function toggleDone(id) {
+  if (editingId === id) return; const t = tasks.find(t => t.id === id); if (!t) return; snapshot(); t.done = !t.done;
+  if (settings.autoArchive && t.done) { archive.unshift({ ...t }); tasks = tasks.filter(x => x.id !== id); } save();
+}
+function autoCheckParent(tid) {
+  if (!settings.autoParent) return; const t = tasks.find(t => t.id === tid); if (!t || !t.subs.length) return; t.done = t.subs.every(s => s.done);
+}
+function toggleSubDone(tid, sid) {
+  const t = tasks.find(t => t.id === tid); if (!t) return; const s = t.subs.find(s => s.id === sid); if (!s) return;
+  snapshot(); s.done = !s.done; autoCheckParent(tid); save();
+}
+function toggleFlag(id) { const t = tasks.find(t => t.id === id); if (!t) return; snapshot(); t.flagged = !t.flagged; save(); }
+function toggleCollapse(id) { const t = tasks.find(t => t.id === id); if (!t) return; t.collapsed = !t.collapsed; save(); }
+function setDueDate(id, val) { const t = tasks.find(t => t.id === id); if (!t) return; snapshot(); t.dueDate = val || null; save(); }
+function startEdit(id) { editingId = id; editingSubId = null; addingSubFor = null; render(); const inp = document.getElementById('edit-' + id); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
+function commitEdit(id) {
+  const inp = document.getElementById('edit-' + id); if (!inp) return;
+  const txt = inp.value.trim(); const t = tasks.find(t => t.id === id);
+  if (t && txt && txt !== t.text) { snapshot(); t.text = txt; } editingId = null; save();
+}
+function startSubEdit(tid, sid) { editingSubId = sid; editingId = null; addingSubFor = null; render(); const inp = document.getElementById('subedit-' + sid); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
+function commitSubEdit(tid, sid) {
+  const inp = document.getElementById('subedit-' + sid); if (!inp) return;
+  const txt = inp.value.trim(); const t = tasks.find(t => t.id === tid);
+  if (t) { const s = t.subs.find(s => s.id === sid); if (s && txt && txt !== s.text) { snapshot(); s.text = txt; } } editingSubId = null; save();
+}
+function showAddSub(id) { addingSubFor = id; editingId = null; editingSubId = null; render(); const inp = document.getElementById('subinput-' + id); if (inp) inp.focus(); }
+function commitAddSub(tid) {
+  if (subCommitting) return; subCommitting = true;
+  const inp = document.getElementById('subinput-' + tid); const txt = inp ? inp.value.trim() : '';
+  if (txt) { const t = tasks.find(t => t.id === tid); if (t) { snapshot(); t.subs.push({ id: Date.now(), text: txt, done: false }); autoCheckParent(tid); } }
+  addingSubFor = null; save(); setTimeout(() => { subCommitting = false; }, 100);
+}
+function clearDone() {
+  if (settings.confirmClear && !confirm('Move completed items to archive?')) return; snapshot();
+  const done = tasks.filter(t => t.done); archive = [...done, ...archive].slice(0, 100);
+  tasks = tasks.filter(t => !t.done).map(t => ({ ...t, subs: t.subs.filter(s => !s.done) })); save();
+}
+function onDragStart(e, id) { dragSrcId = id; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => { const el = document.getElementById('task-' + id); if (el) el.classList.add('dragging'); }, 0); }
+function onDragOver(e, id) { e.preventDefault(); document.querySelectorAll('.task-row').forEach(r => r.classList.remove('drag-over')); const el = document.getElementById('task-' + id); if (el && id !== dragSrcId) el.classList.add('drag-over'); }
+function onDrop(e, id) { e.preventDefault(); document.querySelectorAll('.task-row').forEach(r => r.classList.remove('drag-over', 'dragging')); if (!dragSrcId || dragSrcId === id) return; snapshot(); const from = tasks.findIndex(t => t.id === dragSrcId); const to = tasks.findIndex(t => t.id === id); if (from === -1 || to === -1) return; const [item] = tasks.splice(from, 1); tasks.splice(to, 0, item); dragSrcId = null; save(); }
+function onDragEnd() { document.querySelectorAll('.task-row').forEach(r => r.classList.remove('dragging', 'drag-over')); dragSrcId = null; }
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function isOverdue(d) { if (!d) return false; const t = new Date(); t.setHours(0, 0, 0, 0); return new Date(d + 'T00:00:00') < t; }
+function formatDate(d) {
+  if (!d) return null; const today = new Date(); today.setHours(0, 0, 0, 0); const due = new Date(d + 'T00:00:00'); const diff = Math.round((due - today) / 86400000);
+  if (diff < 0) return { label: Math.abs(diff) + 'd overdue', cls: 'overdue' };
+  if (diff === 0) return { label: 'Due today', cls: 'due-soon' }; if (diff === 1) return { label: 'Due tomorrow', cls: 'due-soon' };
+  return { label: 'Due ' + due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), cls: '' };
+}
+const pencilSvg = `<svg class="pencil-svg" width="11" height="11" viewBox="0 0 13 13" fill="none" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="4,10.5 1.5,11.5 2.5,9" fill="none"/><line x1="2.5" y1="9" x2="9.5" y2="2"/><line x1="4" y1="10.5" x2="11" y2="3.5"/><line x1="9.5" y1="2" x2="11" y2="3.5"/></svg>`;
+const subArrowSvg = `<svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><polyline points="4,2 4,10 11,10"/><polyline points="8,7 11,10 8,13"/></svg>`;
+const calSvg = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><rect x="1" y="2" width="10" height="9" rx="1.5"/><line x1="1" y1="5" x2="11" y2="5"/><line x1="4" y1="1" x2="4" y2="3"/><line x1="8" y1="1" x2="8" y2="3"/></svg>`;
+const flagSvg = (f) => `<svg width="11" height="11" viewBox="0 0 12 12" fill="${f ? '#c8903a' : 'none'}" stroke="${f ? '#c8903a' : 'currentColor'}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 1v10M2 1l7 2.5L2 7"/></svg>`;
+const chevSvg = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="2,3 5,7 8,3"/></svg>`;
+const gripSvg = `<svg width="10" height="14" viewBox="0 0 10 14" fill="none"><circle cx="3" cy="3" r="1.2" fill="#b09040"/><circle cx="7" cy="3" r="1.2" fill="#b09040"/><circle cx="3" cy="7" r="1.2" fill="#b09040"/><circle cx="7" cy="7" r="1.2" fill="#b09040"/><circle cx="3" cy="11" r="1.2" fill="#b09040"/><circle cx="7" cy="11" r="1.2" fill="#b09040"/></svg>`;
+function getSortedTasks() {
+  if (settings.sortOrder === 'manual') return [...tasks];
+  return [...tasks].sort((a, b) => {
+    if (settings.sortOrder === 'priority') { if (a.flagged && !b.flagged) return -1; if (!a.flagged && b.flagged) return 1; }
+    if (a.dueDate && !b.dueDate) return -1; if (!a.dueDate && b.dueDate) return 1;
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate); return 0;
+  });
+}
+function render() {
+  const doneCount = tasks.filter(t => t.done).length;
+  const total = tasks.length + tasks.reduce((a, t) => a + t.subs.length, 0);
+  const done = doneCount + tasks.reduce((a, t) => a + t.subs.filter(s => s.done).length, 0);
+  document.getElementById('counts').textContent = total ? `${total - done} remaining · ${total} total` : '';
+  document.getElementById('clear-btn').style.display = doneCount > 0 ? 'inline' : 'none';
+  document.getElementById('archive-toggle-btn').style.display = archive.length > 0 ? 'inline' : 'none';
+  document.getElementById('archive-panel').style.display = showArchive ? 'block' : 'none';
+  if (showArchive) {
+    document.getElementById('archive-list').innerHTML = archive.length === 0
+      ? `<div class="archive-empty">Nothing archived yet.</div>`
+      : archive.map(t => `<div class="archive-item"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.text)}</span><button class="restore-btn" onclick="restoreFromArchive(${t.id})">Restore</button></div>`).join('');
+  }
+  const lc = settings.lines ? '#b8c870' : 'transparent';
+  if (tasks.length === 0) {
+    document.getElementById('task-list').innerHTML = `<div class="empty-row" style="border-bottom:1px solid ${lc}"><span class="empty-txt">Nothing here yet — press Enter to add.</span></div>`;
+    applySettings(); return;
+  }
+  document.getElementById('task-list').innerHTML = getSortedTasks().map(t => {
+    const isEditing = editingId === t.id, isAddingSub = addingSubFor === t.id, hasSubs = t.subs.length > 0;
+    const subsDoneN = t.subs.filter(s => s.done).length, allSubsDone = hasSubs && subsDoneN === t.subs.length;
+    const due = t.dueDate ? formatDate(t.dueDate) : null, overdue = isOverdue(t.dueDate) && !t.done;
+    const subsHtml = (!t.collapsed && hasSubs) ? t.subs.map(s => {
+      const isSE = editingSubId === s.id;
+      return `<div class="sub-row ${s.done ? 'done' : ''}" style="border-bottom:1px solid ${lc}"><div class="sub-cb ${s.done ? 'checked' : ''}" onclick="toggleSubDone(${t.id},${s.id})">${s.done ? `<svg width="8" height="6" viewBox="0 0 10 8"><path d="M1 4L3.5 6.5L9 1" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>` : ''}</div>${isSE ? `<input class="sub-edit-input" id="subedit-${s.id}" value="${esc(s.text)}" maxlength="500" onblur="commitSubEdit(${t.id},${s.id})" onkeydown="if(event.key==='Enter'){event.preventDefault();commitSubEdit(${t.id},${s.id});} if(event.key==='Escape'){editingSubId=null;render();}"/>` : `<span class="sub-label" style="color:${settings.textColor}">${esc(s.text)}</span>`}<button class="sub-pencil-btn" onclick="startSubEdit(${t.id},${s.id})">${pencilSvg}</button></div>`;
+    }).join('') : '';
+    const addSubRow = (!t.collapsed && isAddingSub) ? `<div class="sub-add-row" style="border-bottom:1px solid ${lc}"><div class="sub-cb" style="border-color:#c8b84a;margin-top:10px;flex-shrink:0;"></div><input class="sub-add-input" id="subinput-${t.id}" placeholder="Add a step..." maxlength="500" onblur="commitAddSub(${t.id})" onkeydown="if(event.key==='Enter'){event.preventDefault();commitAddSub(${t.id});} if(event.key==='Escape'){addingSubFor=null;render();}"/></div>` : '';
+    const metaHtml = (settings.badges && (hasSubs || due)) ? `<div class="task-meta">${hasSubs ? `<span class="step-count ${allSubsDone ? 'all-done' : ''}">${subsDoneN}/${t.subs.length} steps</span>` : ''} ${due ? `<span class="due-badge ${due.cls}">${due.label}</span>` : ''}</div>` : '';
+    return `<div class="task-row ${t.done ? 'done' : ''}" id="task-${t.id}" style="border-bottom:1px solid ${lc}" draggable="true" ondragstart="onDragStart(event,${t.id})" ondragover="onDragOver(event,${t.id})" ondrop="onDrop(event,${t.id})" ondragend="onDragEnd()"><div class="drag-handle">${gripSvg}</div><button class="add-sub-btn" onclick="showAddSub(${t.id})">${subArrowSvg}</button>${t.flagged ? `<div class="priority-dot"></div>` : ''}<div class="cb ${t.done ? 'checked' : ''}" onclick="toggleDone(${t.id})">${t.done ? `<svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 4L3.5 6.5L9 1" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>` : ''}</div><div class="task-main"><div class="task-top">${isEditing ? `<input class="edit-input" id="edit-${t.id}" value="${esc(t.text)}" maxlength="500" style="color:${settings.textColor}" onblur="commitEdit(${t.id})" onkeydown="if(event.key==='Enter'){event.preventDefault();commitEdit(${t.id});} if(event.key==='Escape'){editingId=null;render();}"/>` : `<span class="task-label" style="color:${overdue ? '#c04040' : settings.textColor}">${esc(t.text)}</span>`}<div class="task-actions"><button class="action-btn" onclick="toggleFlag(${t.id})">${flagSvg(t.flagged)}</button><button class="action-btn" onclick="document.getElementById('datepick-${t.id}').style.display='inline';document.getElementById('datepick-${t.id}').focus()">${calSvg}</button><button class="action-btn" onclick="startEdit(${t.id})">${pencilSvg}</button>${hasSubs ? `<button class="action-btn collapse-btn ${t.collapsed ? 'collapsed' : ''}" onclick="toggleCollapse(${t.id})">${chevSvg}</button>` : ''}</div></div><input type="date" class="date-input" value="${t.dueDate || ''}" onchange="setDueDate(${t.id},this.value)" style="display:none" id="datepick-${t.id}"/>${metaHtml}${subsHtml}${addSubRow}</div></div>`;
+  }).join('');
+  applySettings();
+}
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    const tag = document.activeElement.tagName; if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    e.preventDefault(); undo();
+  }
+});
+load();
+loadFromShareLink();
+applySettings();
+render();
+</script>
+</body>
+</html>
 
