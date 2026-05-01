@@ -3,10 +3,10 @@ const path = require('path');
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 600,
-    height: 700,
-    minWidth: 460,
-    minHeight: 400,
+    width: 440,
+    height: 640,
+    minWidth: 440,
+    minHeight: 300,
     title: 'TDL',
     webPreferences: {
       nodeIntegration: false,
