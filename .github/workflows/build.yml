@@ -1,50 +1,23 @@
-name: Build
+name: Build Windows Installer
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: ["**"]
   workflow_dispatch:
 
 jobs:
-  build-windows:
+  build-win:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Windows installer
-        run: npm run build:win
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload installer
-        uses: actions/upload-artifact@v4
+          node-version: 22
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build:win
+      - uses: actions/upload-artifact@v4
         with:
-          name: TDL-Windows
+          name: TDL-Windows-Installer
           path: dist/*.exe
-
-  release:
-    needs: build-windows
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: TDL-Windows
-          path: dist/
-
-      - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-- name: Claude Code Action Official
-  uses: anthropics/claude-code-action@v1
+          if-no-files-found: error
