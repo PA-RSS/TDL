@@ -46,3 +46,5 @@ jobs:
           files: dist/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- name: Claude Code Action Official
+  uses: anthropics/claude-code-action@v1
